@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTM Flow - Clickable Journey</title>
+<style>
+:root{--or:#F15F2E;--or-soft:#fdece4;--ink:#1c2430;--mut:#64748b;--line:#e3e8ef;--bg:#f6f7f9;--card:#fff;--gold:#FFC000;
+   --blue:#1d4ed8;--green:#0f9d58;--purple:#7c3aed;--teal:#0e7490;--amber:#b45309;--red:#dc2626;--slate:#475569;
+   --rest-active:#0f9d58;--rest-parked:#b45309;--rest-disq:#dc2626;--rest-hard:#7c3aed;--rest-escalated:#dc2626;--rest-waiting:#1d4ed8;--rest-proposal:#7c3aed;}
+ *{box-sizing:border-box}
+ html{height:100%}
+ body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;display:flex;flex-direction:column}
+ header{flex:none;background:#fff;border-bottom:1px solid var(--line);padding:9px 16px;z-index:5}
+ .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+ .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ button{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:6px 11px}
+ button:hover{border-color:var(--or);color:var(--or)}
+ button.pri{background:var(--or);border-color:var(--or);color:#fff}
+ button.pri:hover{color:#fff;opacity:.92}
+ input[type=search]{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 11px;min-width:220px}
+ .chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:999px;border:1px solid var(--line);vertical-align:middle;margin-left:8px;white-space:nowrap}
+ .c-entry{background:#eef2ff;color:var(--blue);border-color:#c7d2fe}
+ .c-journey{background:#f1f5f9;color:var(--slate);border-color:#e2e8f0}
+ .c-agent{background:var(--or-soft);color:var(--or);border-color:#f6c9b5}
+ .c-system{background:#e7f6ec;color:var(--green);border-color:#c3e7cf}
+ .c-channel{background:#f3ebff;color:var(--purple);border-color:#ddd0fb}
+ .c-human{background:#eef0f3;color:#5a6672;border-color:#e2e6ea}
+ .c-reply{background:#e3f5f8;color:var(--teal);border-color:#bfe6ec}
+ .c-action{background:#fdf0dd;color:var(--amber);border-color:#f4d9ad}
+ .c-loop{background:#fff8e1;color:var(--amber);border-color:#f6e3a8}
+ .c-terminal{background:#fdecec;color:var(--red);border-color:#f7c9c9}
+ .c-exit{background:#f1f3f5;color:#6b7280;border-color:#d7dbe0}
+ .c-family{background:#fff4cc;color:#8a6d00;border-color:#f2dd9a}
+ .c-tk{background:#1c2430;color:#fff;border-color:#1c2430;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .c-rest{font-size:9px;font-weight:800;letter-spacing:.03em;padding:1px 6px;border-radius:999px;border:1px solid;vertical-align:middle;margin-left:4px;white-space:nowrap;text-transform:uppercase}
+  .c-rest-active{background:#e7f6ec;color:var(--rest-active);border-color:#c3e7cf}
+  .c-rest-parked{background:#fff8e1;color:var(--rest-parked);border-color:#f6e3a8}
+  .c-rest-disq{background:#fdecec;color:var(--rest-disq);border-color:#f7c9c9}
+  .c-rest-hard{background:#f3ebff;color:var(--rest-hard);border-color:#ddd0fb}
+  .c-rest-escalated{background:#fdecec;color:var(--rest-escalated);border-color:#f7c9c9}
+  .c-rest-waiting{background:#eef2ff;color:var(--rest-waiting);border-color:#c7d2fe}
+  .c-rest-proposal{background:#f3ebff;color:var(--rest-proposal);border-color:#ddd0fb}
+ .sections{flex:1;min-height:0}
+ .tree{height:100%;background:transparent;border:0;border-radius:0;padding:44px 38px;overflow:auto;cursor:grab}
+ .tree.panning{cursor:grabbing;user-select:none}
+ .canvas{position:relative;display:flex;align-items:flex-start;gap:170px;width:max-content;min-width:100%}
+ .zone{position:relative;z-index:1}
+ .shared-zone{margin-top:30px}
+ .shared-zone.hidden{display:none}
+ svg.links{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:0}
+ svg.links path{fill:none;stroke:#f0996f;stroke-width:2;stroke-dasharray:6 5;opacity:.9}
+ .box.k-join{border-left-color:var(--or);border-style:dashed;color:var(--or);font-weight:650;width:auto;min-width:210px}
+ .box.k-shared{border-left-color:var(--or);background:var(--or-soft);width:300px}
+ .box.k-shared .nlabel{font-weight:800}
+ .c-join{background:var(--or-soft);color:var(--or);border-color:#f6c9b5}
+ .c-shared{background:var(--or);color:#fff;border-color:var(--or);font-weight:700}
+ .node{display:flex;align-items:center}
+ .box{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;background:#fff;padding:8px 11px;cursor:pointer;flex:none;width:248px;box-shadow:0 1px 2px rgba(16,24,40,.05);transition:border-color .12s,box-shadow .12s}
+ .box:hover{border-color:var(--or);box-shadow:0 2px 10px rgba(241,95,46,.14)}
+ .brow{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+ .nlabel{font-weight:650;font-size:13px}
+ .box.k-entry{border-left-color:var(--blue)}
+ .box.k-journey{border-left-color:var(--slate)}
+ .box.k-agent{border-left-color:var(--or)}
+ .box.k-system{border-left-color:var(--green)}
+ .box.k-channel{border-left-color:var(--purple)}
+ .box.k-human{border-left-color:#5a6672}
+ .box.k-reply{border-left-color:var(--teal)}
+ .box.k-action{border-left-color:var(--amber)}
+ .box.k-loop{border-left-color:#e8a900}
+ .box.k-terminal{border-left-color:var(--red)}
+ .box.k-exit{border-left-color:#6b7280}
+ .box.k-family{border-left-color:var(--gold)}
+ .tw{color:var(--or);font-size:10px;flex:none;display:inline-block;transition:transform .12s}
+ .node.open>.box .tw{transform:rotate(90deg)}
+ .bbody{display:none;margin-top:8px}
+ .node.open>.box .bbody{display:block}
+ .detail{margin:0 0 7px;color:#33414f;font-size:12px}
+ .line{margin:5px 0;padding:6px 9px;border-radius:8px;font-size:12px}
+ .line .lbl{display:block;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;opacity:.85}
+ .lag{background:var(--or-soft);border:1px solid #f6c9b5}
+ .lag .lbl{color:var(--or)}
+ .lsys{background:#e7f6ec;border:1px solid #c3e7cf}
+ .lsys .lbl{color:var(--green)}
+ .lch{background:#f3ebff;border:1px solid #ddd0fb}
+ .lch .lbl{color:var(--purple)}
+ .lasset{background:#eef2ff;border:1px solid #c7d2fe}
+ .lasset .lbl{color:var(--blue)}
+ .llp{background:#fff8e1;border:1px solid #f6e3a8}
+ .llp .lbl{color:var(--amber)}
+ .lin{background:#f1f4f8;border:1px solid #dbe3ec}
+ .lin .lbl{color:#475569}
+ .lout{background:#edf6f4;border:1px solid #cfe7e0}
+ .lout .lbl{color:#0e7490}
+ .kids{display:none;flex-direction:column;justify-content:center;margin-left:44px;position:relative}
+ .node.open>.kids{display:flex}
+ .kidrow{display:flex;align-items:center;position:relative;padding:11px 0}
+ .kidrow::before{content:"";position:absolute;left:-44px;top:50%;width:44px;height:2px;background:#d3d9e0}
+ .kidrow::after{content:"";position:absolute;left:-44px;top:50%;width:2px;height:0;background:#d3d9e0}
+ .kidrow:not(:first-child)::after{top:0;height:50%}
+ .kidrow:not(:last-child)::after{top:50%;height:50%}
+ .edgebox{flex:none;width:178px;margin-right:16px;background:#f7fafd;border:1px dashed #b7c5d6;border-radius:9px;padding:6px 10px;font-size:11px;line-height:1.42;color:#44566b;position:relative}
+ .edgebox .elbl{display:block;font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8191a3;margin-bottom:2px}
+ .edgebox::after{content:"▸";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:#b7c5d6;font-size:12px;line-height:1}
+ .node.hit>.box{box-shadow:inset 0 0 0 2px var(--or)}
+ .node.dim{opacity:.28}
+ code{background:#eef0f3;padding:1px 5px;border-radius:5px;font-size:12px}
+ .defs{flex:none;background:#fcfdfe;border-bottom:1px solid var(--line);padding:7px 16px;display:flex;flex-wrap:wrap;gap:5px 15px;align-items:center;font-size:11.5px;color:#55657a}
+ .defs .dttl{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8191a3}
+ .defs .d b{color:var(--ink);font-weight:700}
+ .defs .d .x{color:#8191a3}
+ .vtag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.03em;padding:1px 6px;border-radius:999px;background:#eef1f5;color:#7c8a9c;border:1px solid #dde3ea;margin-left:6px;text-transform:uppercase;vertical-align:middle;white-space:nowrap}
+ .dec{margin:8px 0 2px;padding:8px 10px;border:1px solid #f0d08a;background:#fffaf0;border-radius:9px}
+ .dec .dq{font-weight:700;font-size:12px;color:#8a6d00;display:flex;align-items:center;gap:6px}
+ .dec .dq::before{content:"◆";color:#e0a800}
+ .dec .dbr{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:5px;font-size:11.5px}
+ .dec .y{color:#0f9d58}
+ .dec .n{color:#b45309}
+</style>
+</head>
+<body>
+<header>
+ <div class="bar">
+  <button class="pri" id="expandAll">Expand all</button>
+  <button id="collapseAll">Collapse all</button>
+  <input type="search" id="search" placeholder="Search a step (e.g. opportunity, pricing, RFP)">
+ </div>
+</header>
+<div class="defs">
+ <span class="dttl">Definitions</span>
+ <span class="d"><b>Account</b> <span class="x">— the organisation (e.g. UWA)</span></span>
+ <span class="d"><b>Lead</b> <span class="x">— the contact person at that account (e.g. Rick at UWA)</span></span>
+ <span class="d"><b>Opportunity (“deal”)</b> <span class="x">— a specific problem worth pursuing; one account can carry several, across teams</span></span>
+ <span class="d"><b>Contact</b> <span class="x">— a person linked to an account (e.g. from an event list)</span></span>
+ <span class="d"><b>Asset</b> <span class="x">— a piece of our proof (case study, one-pager) used in outreach</span></span>
+ <span class="d"><b>Hook</b> <span class="x">— the specific, provable reason we lead with</span></span>
+ <span class="d"><b>Tier (A / B / defer)</b> <span class="x">— priority from the 6-factor score (max 12)</span></span>
+ <span class="d"><b>◆ Decision</b> <span class="x">— a fork where a human picks yes/no; a human can also pause, edit or stop at any node</span></span>
+</div>
+<div class="sections" id="sections"></div>
+<script>
+   var KIND={entry:'Entry',journey:'Stage',agent:'Agent',system:'System',channel:'Channel',human:'Human',reply:'Reply',action:'Next action',loop:'Loop',terminal:'End',exit:'Exit',family:'Family',join:'Continue',shared:'Shared'};
+
+ /* Ticket map — every node's Jira user story. Source: gtm-agent-jira-structure.md
+    (Story 1..31 = MINING-123..131, 138..159). Entry nodes are keyed by id; the
+    shared journey/post/reply nodes are keyed by their suffix after the eN_ prefix. */
+ var TKT={
+  'start':'MINING-124 · MINING-125','intake':'MINING-124 · MINING-125',
+  'e1':'MINING-124','e1a':'MINING-123','e1b':'MINING-124',
+  'e2':'MINING-124 · MINING-125','e2a':'MINING-123','e2b':'MINING-124','e2c':'MINING-129','e2d':'MINING-130',
+  'e3':'MINING-123','e3a':'MINING-123','e3b':'MINING-157','e3c':'MINING-152',
+  'e4':'MINING-124','e4a':'MINING-124','e4b':'MINING-124','e4c':'MINING-128',
+  'e5':'MINING-124','e5a':'MINING-123','e5b':'MINING-124','e5c':'MINING-157',
+  'e6':'MINING-124','e6a':'MINING-124','e6b':'MINING-128',
+  'e7':'MINING-124','e8':'MINING-150','e9':'MINING-151','e10':'MINING-129','e10b':'MINING-152',
+  '_chk':'MINING-129','_res':'MINING-128 · MINING-152','_score':'MINING-128 · MINING-126','_prio':'MINING-128','_asset':'MINING-138 · MINING-155','_opp':'MINING-124','_go':'MINING-124',
+  '_j1':'MINING-128','_j2':'MINING-124','_j3':'MINING-130','_j4':'MINING-129 · MINING-147 · MINING-153','_j5':'MINING-130','_j6':'MINING-130','_j6a':'MINING-146','_j6b':'MINING-146','_j7':'MINING-131',
+  '_rA':'MINING-131','_rA1':'MINING-131','_rA2':'MINING-131',
+  '_eng1':'MINING-141','_eng2':'MINING-141','_eng3':'MINING-127','_eng4':'MINING-140','_eng5':'MINING-141','_eng6':'MINING-158','_eng7':'MINING-141','_eng8':'MINING-140','_eng9':'MINING-142',
+  '_rB':'MINING-131','_rB1':'MINING-138','_rB2':'MINING-138','_rB3':'MINING-138','_rB4':'MINING-138',
+  '_rC':'MINING-131','_rC1':'MINING-149','_rC2':'MINING-149','_rC3':'MINING-149',
+  '_rD':'MINING-131','_rD1':'MINING-157','_rD2':'MINING-157','_rD3':'MINING-157',
+  '_rE':'MINING-131','_rE1':'MINING-138','_rE2':'MINING-138','_rE3':'MINING-142','_rE4':'MINING-142',
+  '_rF':'MINING-131','_rF1':'MINING-149','_rF2':'MINING-131','_rF3':'MINING-131',
+  '_rG':'MINING-131','_rG1':'MINING-131','_rG2':'MINING-131','_rG3':'MINING-131',
+  '_rNext':'MINING-139 · MINING-154',
+  '_l1':'MINING-159','_l2':'MINING-142','_l3':'MINING-149','_l4':'MINING-142','_l5':'MINING-143'
+ };
+ function tkt(id){
+  if(TKT[id])return TKT[id];
+  var m=/^(?:e[1-7]|sh)(_.+)$/.exec(id);
+  return (m&&TKT[m[1]])?TKT[m[1]]:'';
+ }
+ function tktChip(id){var t=tkt(id);if(!t)return '';return '<span class="chip c-tk">'+t.split(' \u00B7 ').map(storyLabel).join(' \u00B7 ')+'</span>';}
+ var STORYNUM={'MINING-123':1,'MINING-124':2,'MINING-125':3,'MINING-126':4,'MINING-127':5,'MINING-128':6,'MINING-129':7,'MINING-130':8,'MINING-131':9,'MINING-138':10,'MINING-139':11,'MINING-140':12,'MINING-141':13,'MINING-142':14,'MINING-143':15,'MINING-144':16,'MINING-145':17,'MINING-146':18,'MINING-147':19,'MINING-148':20,'MINING-149':21,'MINING-150':22,'MINING-151':23,'MINING-152':24,'MINING-153':25,'MINING-154':26,'MINING-155':27,'MINING-156':28,'MINING-157':29,'MINING-158':30,'MINING-159':31};
+ function storyLabel(t){var n=STORYNUM[t];return n?'Story '+n:t;}
+
+var REST_STATE={
+  'rA1':'active','rA2':'waiting',
+  'rB1':'waiting','rB2':'waiting','rB3':'active','rB4':'waiting',
+  'rC1':'parked','rC2':'parked','rC3':'parked',
+  'rD1':'active','rD2':'active','rD3':'waiting',
+  'rE1':'active','rE2':'active','rE3':'active','rE4':'disq',
+  'rF1':'parked','rF2':'hard','rF3':'escalated',
+  'rG1':'active','rG2':'waiting','rG3':'active'
+};
+function restChip(id){
+  var rs=REST_STATE[id];
+  if(!rs)return '';
+  var map={'active':['ACTIVE','c-rest-active'],'parked':['PARKED','c-rest-parked'],'disq':['DISQUALIFIED','c-rest-disq'],'hard':['HARD STOP','c-rest-hard'],'escalated':['ESCALATED','c-rest-escalated'],'waiting':['WAITING','c-rest-waiting'],'proposal':['PROPOSAL','c-rest-proposal']};
+  var m=map[rs]||[rs.toUpperCase(),'c-rest-active'];
+  return '<span class="chip c-rest '+m[1]+'">'+m[0]+'</span>';
+}
+
+function FAM(p){
+ return [
+{id:p+'rA',kind:'family',label:'A \u00b7 Engagement / Interest',detail:'Positive reply. Move interest to a booked next step.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rA1',kind:'action',label:'\u201cYes \u2014 let\u2019s talk\u201d',detail:'Prospect wants to talk. Book a call and run the engagement loop to a proposal.',agent:'Propose two times; log the interaction; prepare a short brief.',asset:'xponent.ai L1 \u2014 intro',rest:'proposal',children:[
+    {id:p+'eng1',kind:'channel',label:'Book the call (EA coordinates)',detail:'Agent proposes times; a rep or EA confirms one and the invite goes out.',agent:'Reads availability from Graph; drafts a short propose-times note; logs the interaction.',channel:'Email invites = Graph connector; a call is booked by hand.',children:[
+     {id:p+'eng2',kind:'channel',label:'First meeting \u2014 discovery call',detail:'Discovery call on Teams. Captured afterwards from the transcript.',channel:'Teams \u2014 captured from the transcript.',children:[
+      {id:p+'eng3',kind:'agent',label:'Capture the call \u2192 minutes + next action',detail:'The transcript becomes meeting points, a decision, and the best next step.',agent:'Pulls out the key points and the best next step; writes the minutes; logs a completed interaction.',sys:'Minutes + next step saved to context.',children:[
+       {id:p+'eng4',kind:'agent',label:'Recap email + a small, relevant selection',detail:'Recap of the call plus one or two relevant pieces of delivered work. A human approves before it sends.',agent:'Writes the recap from the minutes; picks one or two pieces of work; readies it for approval.',asset:'Oroton work examples',children:[
+        {id:p+'eng5',kind:'agent',label:'Prep the next session: agenda + NDA',detail:'Agent drafts the next-session agenda from the minutes and attaches a mutual NDA.',agent:'Generates the agenda; selects the NDA template; proposes dates.',asset:'Technical workshop agenda (AI-generated) + mutual NDA',children:[
+         {id:p+'eng6',kind:'human',label:'Legal / NDA gate',decision:{q:'NDA signed?',yes:'unlock secure sharing and continue',no:'hold sensitive documents until it is signed'},detail:'Sensitive documents stay gated until the NDA is signed. Owned by legal.',sys:'Records the signed agreement and unlocks secure sharing.',children:[
+          {id:p+'eng7',kind:'channel',label:'Technical discovery workshop',detail:'Working session with the technical team. Captured from the transcript.',channel:'Teams \u2014 captured from the transcript.',children:[
+           {id:p+'eng8',kind:'agent',label:'Walk-through / next-steps meeting',detail:'Walk them through our understanding and propose the approach for early sign-off.',agent:'Puts together the walk-through and proposed approach from the minutes; proposes the meeting.',children:[
+            {id:p+'eng9',kind:'loop',label:'\u2192 Confirmed real: opportunity confirmed \u2192 Proposal',detail:'A clear, defined problem is confirmed. The opportunity proceeds to a proposal.',loop:'Feeds back into journey stage 2 (confirm opportunity) and on to Proposal — END.'}
+           ]}
+          ]}
+         ]}
+        ]}
+       ]}
+      ]}
+     ]}
+    ]}
+   ]},
+   {id:p+'rA2',kind:'action',label:'Specific question',detail:'Answer precisely, then offer a short call.',agent:'Draft a well-founded answer from the knowledge base; don’t over-promise.',rest:'waiting'}
+  ]},
+{id:p+'rB',kind:'family',label:'B \u00b7 Info / Proof requested',detail:'Prospect wants evidence. Send the matched proof.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rB1',kind:'action',label:'Send info / proof',detail:'Send tailored info and point to the right proof.',agent:'Picks the closest asset; tailors the covering note.',asset:'AI-Ready Data Foundation',rest:'waiting'},
+   {id:p+'rB2',kind:'action',label:'Skeptical / prove it',detail:'Share a close case study and offer a reference.',agent:'Match industry + use case; offer a reference call.',asset:'Oroton \u2014 Unity Catalog migration',rest:'waiting'},
+   {id:p+'rB3',kind:'action',label:'Pricing',detail:'Offer a scoping call; do not quote by email.',agent:'Refuses to quote; drafts a scoping invite instead.',rest:'active'},
+   {id:p+'rB4',kind:'action',label:'Credibility check',detail:'Send the credibility pack.',agent:'Pulls partner status and proof.',asset:'xponent.ai L1 \u2014 intro',rest:'waiting'}
+  ]},
+{id:p+'rC',kind:'family',label:'C \u00b7 Timing / keep warm',detail:'Not now. Turn vague timing into a firm date to revisit.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rC1',kind:'action',label:'No budget',detail:'Shift to ROI; revisit next budget cycle.',agent:'Puts a number on the value; sets a date to follow up.',asset:'Retail ROI calculator',rest:'parked'},
+   {id:p+'rC2',kind:'action',label:'Bad timing',detail:'Agree a specific revisit date.',agent:'Proposes a date; parks the opportunity and sets a reminder.',rest:'parked'},
+   {id:p+'rC3',kind:'action',label:'Not a priority',detail:'Show the cost of doing nothing.',agent:'Drafts a cost-of-doing-nothing note.',asset:'AI-Ready Data Foundation',rest:'parked'}
+  ]},
+{id:p+'rD',kind:'family',label:'D \u00b7 Routing / Stakeholder',detail:'The message needs to reach a different person.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rD1',kind:'action',label:'Positive redirect',detail:'Re-route to the named colleague.',agent:'Creates a new lead; checks for duplicates; drafts a warm introduction request.',rest:'active'},
+   {id:p+'rD2',kind:'action',label:'Wrong person / forwarded',detail:'Find the correct contact.',agent:'Works out who’s who; proposes the right owner.',rest:'active'},
+   {id:p+'rD3',kind:'action',label:'Gatekeeper / EA',detail:'Ask for the right introduction.',agent:'Drafts a polite intro request.',rest:'waiting'}
+  ]},
+{id:p+'rE',kind:'family',label:'E \u00b7 Objection / Qualification',detail:'An objection, or a signal of poor fit. Handle with proof, or qualify out.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rE1',kind:'action',label:'Already doing it (in-house / vendor)',detail:'Stand out on proof and results, not features.',agent:'Pulls the closest outcome proof.',asset:'Oroton \u2014 34% Databricks savings',rest:'active'},
+   {id:p+'rE2',kind:'action',label:'Security / compliance',detail:'Send the security and compliance pack and offer a technical call.',agent:'Picks the security and compliance asset; books the technical review.',asset:'Diageo CDE engagement overview',rest:'active'},
+   {id:p+'rE3',kind:'action',label:'Procurement / RFP',detail:'Move to the procurement path.',agent:'Flags the formal process; tracks timelines and requirements.',rest:'active'},
+   {id:p+'rE4',kind:'action',label:'Genuinely not a fit',detail:'Rule it out, with a reason.',agent:'Records the reason and stops the sequence.',rest:'disq'}
+  ]},
+{id:p+'rF',kind:'family',label:'F \u00b7 Negative / Exit',detail:'Stop, block, or flag it up.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rF1',kind:'action',label:'Polite no',detail:'Thank them, park with a revisit date.',agent:'Sets a far-off date to follow up; stops the active sequence.',rest:'parked'},
+   {id:p+'rF2',kind:'action',label:'Unsubscribe',detail:'HARD STOP \u2014 block and log.',agent:'Adds a do-not-contact flag; blocks all future sends.',rest:'hard'},
+   {id:p+'rF3',kind:'action',label:'Hostile / complaint',detail:'Flag it to Rajeev.',agent:'Flags it immediately with the full thread; stops the sequence.',rest:'escalated'}
+  ]},
+{id:p+'rG',kind:'family',label:'G \u00b7 Admin (mechanical)',detail:'Mechanical replies \u2014 housekeeping, no human needed.',loop:'Every action here ends in a logged Next action \u2192 END, Exit, or keep-warm.',children:[
+   {id:p+'rG1',kind:'action',label:'Out of office',detail:'Not a reply; continue the sequence.',agent:'Notes the return date; no action.',rest:'active'},
+   {id:p+'rG2',kind:'action',label:'Channel switch',detail:'Move to the requested channel (manual).',agent:'Switches the channel; reminds the rep it must be logged manually.',channel:'Manual \u2014 no connector.',rest:'waiting'},
+   {id:p+'rG3',kind:'action',label:'Bounce / invalid',detail:'Flag and find an alternate.',agent:'Finds an alternate contact; flags the address.',rest:'active'}
+  ]}
+ ];
+}
+
+function J(pf){
+ var p=pf+'_';
+ return {id:p+'j2',kind:'agent',label:'5 \u00b7 Find / confirm the opportunity',decision:{q:'Is there a real opportunity yet?',yes:'open it (value + stage) and continue',no:'mark \u201cno discovery yet\u201d \u2014 loop until discovery produces one'},input:'A confirmed lead + the research dossier.',output:'A confirmed opportunity with value and stage, or a no-discovery-yet marker that loops until one appears.',
+     detail:'If the opportunity was already logged (a referral, or a full capture), confirm it and back it up with the research \u2014 scope and value worked out from the evidence. If not, we don\u2019t force one: it is marked later, when discovery produces one \u2014 at the first draft, the reply, or the discovery call.',
+     agent:'Works out the problem from the evidence; proposes value and stage; records \u201cno discovery yet\u201d until it can.',
+     loop:'The opportunity may still not exist \u2014 loops until discovery produces one.',
+    children:[
+     {id:p+'j3',kind:'system',label:'6 \u00b7 Do-not-send check (already being worked?)',decision:{q:'Safe to reach out?',yes:'continue to the hook and draft',no:'stop \u2014 already being worked, or do-not-contact'},input:'The account + any live threads and ownership.',output:'A go / no-go on outreach \u2014 blocks if the account is already being worked.',
+      detail:'Before any outreach: is the account already being worked, is another rep on it, is there a do-not-contact flag?',
+      agent:'Checks our records and the thread history; blocks outreach when it is already being worked.',
+      sys:'Records the decision.',
+      children:[
+        {id:p+'asset',kind:'agent',label:'7 \u00b7 Find the hook &amp; choose what to share',input:'The research, our history and the confirmed opportunity.',output:'A chosen hook + the asset to lead with (or a human-picked one), ready for the draft.',
+         detail:'A decision, not a default. From the research and our history, pick the hook to lead with, then choose what to share: (1) if an asset of ours is genuinely relevant, share it; (2) if nothing of ours matches but the account is a customer-intelligence fit \u2014 retail, a big consumer-data business, or where CI clearly fits \u2014 share the published Oroton case study (an example of this case, not the default for everyone); (3) otherwise the agent suggests the best-matching asset from our library and a human decides. The relevance rules live in the asset skill.',
+         agent:'Picks the strongest provable hook, matches it to our assets, and shares only when relevant; if none fit, suggests one from our library for a human to decide \u2014 never picks on its own or makes things up.',
+         asset:'Shared only when relevant. Oroton case study = example for the customer-intelligence case.',
+        children:[
+        {id:p+'j4',kind:'agent',label:'8 \u00b7 Choose channel &amp; draft',input:'The hook + the chosen asset.',output:'A drafted message in our style, on the chosen channel, ready for approval.',
+         detail:'Email-first; Teams, LinkedIn and calls are manual. With no known problem, the first message is an \u201cexchange notes\u201d intro, not a pitch.',
+         agent:'Picks the channel, bases the message on the hook and the chosen asset, writes in our learned style, and suggests the warmest way in (an introduction, an account exec, or CEO-to-CEO) rather than going cold.',
+        children:[
+         {id:p+'j5',kind:'human',label:'9 \u00b7 Human approves',decision:{q:'Approve this draft?',yes:'send it',no:'edit, or reject back to the draft'},input:'The draft with its reasoning and the exact proof it will use.',output:'An approved (or edited) message cleared to send \u2014 nothing goes out without this.',
+          detail:'No outward action happens without a human approval.',
+          agent:'Readies the draft with its reasoning and the exact proof it will use.',
+          children:[
+           {id:p+'j6',kind:'channel',label:'10 \u00b7 Send / message \u2014 marked as sent',input:'The approved message.',output:'A sent, logged message \u2014 via Graph (email) or captured by hand (any other channel).',
+            detail:'Email sends through Graph and is auto-logged, then marked as sent. Any other channel is sent by hand and must be logged manually.',
+            children:[
+             {id:p+'j6a',kind:'system',label:'Email \u2014 Graph connector',detail:'Auto-logged to the thread and the account context.',channel:'Connector (Microsoft Graph).',loop:'A reply arrives automatically at 11 \u00b7 Reply received (below).'},
+             {id:p+'j6b',kind:'system',label:'Non-email \u2014 manual capture',detail:'LinkedIn, WhatsApp, call, in-person: no connector, so the message only exists if a human logs it.',channel:'Manual \u2014 no connector.',
+              agent:'The agent cannot see this channel; it depends entirely on the manual log to stay in sync.',loop:'Once logged, a reply to it also arrives at 11 · Reply received (below).'},
+             {id:p+'j7',kind:'reply',label:'11 \u00b7 Reply received \u2014 from any channel',input:'An inbound reply from any channel (email auto-logged, others logged by hand).',output:'The reply sorted into a family (A\u2013G), each with a proposed next step + backing asset.',
+              detail:'A reply arrives by email (logged automatically) or another channel (logged by hand). Every reply is recorded, then sorted into families, each with its own next step.',
+              agent:'Sorts the reply into a type, checks it’s a real reply (not an auto-response), updates the contact status, and proposes the next step plus the backing asset.',
+              channel:'Email = connector (auto). Everything else = manual.',
+              children:FAM(p).concat([{
+               id:p+'rNext',kind:'loop',label:'\u2192 Every reply ends in a Next action',
+               detail:'The recommended next step becomes a logged interaction or a task with an owner and a date, then loops back to engagement.',
+               loop:'Loops back to the draft step, or forward to the loops and endpoints below.',
+               children:[
+                {id:p+'l1',kind:'agent',label:'Meeting capture loop',
+                 detail:'A meeting is captured from a Teams auto-transcript (Graph), an uploaded transcript, or pasted notes. The agent turns it into meeting points and the best next step, then saves it.',
+                 agent:'Pulls out the key points, decisions and the best next step; writes minutes + a decision; logs a completed interaction.',
+                 sys:'Minutes + next step saved to context; audit entry with the source (auto / uploaded / pasted).',
+                 loop:'Feeds back into the draft step and the opportunity step.'},
+                {id:p+'l2',kind:'system',label:'Confirmed real \u2192 opportunity created',
+                 detail:'When discovery confirms a problem worth paying for, an opportunity is opened with value, stage and next step.',
+                 agent:'Runs the go/no-go checks; only proceeds when the evidence supports it.',
+                 sys:'Opportunity created / updated in our records.'},
+                {id:p+'l3',kind:'loop',label:'Keep warm / re-engage (Timing)',
+                 detail:'Parked opportunities resurface automatically before their revisit date.',
+                 agent:'Monitors the revisit date and raises an alert when it is within a week.',
+                 loop:'Rejoins the journey at the draft step.'},
+                {id:p+'l4',kind:'exit',label:'Exit / rule out (Negative or poor fit)',
+                 detail:'Blocked or ruled-out accounts stop receiving outreach and leave the active pipeline.',
+                 agent:'Applies the do-not-contact flag and records the reason.'},
+                {id:p+'l5',kind:'terminal',label:'Proposal submitted \u2014 END',
+                 detail:'The flow stops at proposal submission. Close, proof-of-value, win/loss and handover are deliberately left out.'}
+               ]}
+              ])}
+            ]}
+          ]}
+        ]}
+      ]}
+    ]}
+  ]};
+}
+
+function POST(pf){
+ var chk={id:pf+'_chk',kind:'human',label:'4 \u00b7 Confirm the lead \u2014 human check',decision:{q:'Is this the right lead?',yes:'confirm \u2014 continue to the opportunity step',no:'edit the details, or swap in a different lead, then re-confirm'},input:'The top-priority account + its proposed lead, with source and confidence.',output:'A human-confirmed (or corrected) lead; the case proceeds to the opportunity step.',detail:'A human confirms the identified person is still the right one \u2014 checked on LinkedIn / Sales Navigator. People change roles.',agent:'Presents the lead with the source and its confidence; the human confirms or corrects before we reach out.',children:[ J(pf) ]};
+ var prio={id:pf+'_prio',kind:'system',label:'3 \u00b7 Work by priority \u2014 A \u2192 B \u2192 defer',vis:'Visibility only',input:'All scored, tiered accounts in the queue.',output:'An ordered work queue \u2014 highest tier first \u2014 handed to the lead check.',detail:'The agent does not work in the order things arrive. It handles the highest tier first \u2014 A-tier accounts, then B-tier, then defer. Hand it three accounts of different tiers and the A-tier is reached first.',sys:'Orders the work queue by tier, then owner.',children:[ chk ]};
+ var score={id:pf+'_score',kind:'agent',label:'2 \u00b7 Score &amp; assign tier',vis:'Visibility only',input:'The research dossier + history from step 1.',output:'A 6-factor score (max 12), a tier (A / B / defer) and an owner on the account.',detail:'Scored from the research and history just gathered \u2014 you can only score once the history is in. Sets the 6-factor score (max 12), the tier (A / B / defer) and the owner.',agent:'Applies the 6-factor model to the research; assigns tier and owner.',sys:'Writes the score and tier to the account Context.',children:[ prio ]};
+ var res={id:pf+'_res',kind:'agent',label:'1 \u00b7 Research the account + fetch history',input:'From the entry scenario: the stored Account (+ any Lead / Opportunity) and any human-added context.',output:'A research dossier + our prior history written to the account Context, feeding the score.',detail:'Runs the account-research skill and pulls our own history in one step \u2014 signals, investments, hires, recent problems. This is also where we watch for a reason to engage; there is no separate signal-watch step.',agent:'Lays out what is known vs what it worked out, plus our prior history; works things out from evidence, makes nothing up.',children:[ score ]};
+ return res;
+}
+
+var FLOW={id:'start',kind:'entry',label:'START \u00b7 What landed with the GTM team?',
+ detail:'An account, a lead, an opportunity \u2014 or any mix \u2014 arrives one of three ways: an <b>email</b>, a <b>call / meeting transcript</b>, or <b>free-hand text</b>. The human can add their own context on the account <b>in the app</b> (a free-text field), which the agent folds in alongside its research.',
+ input:'One trigger from any of three sources \u2014 an email, a call / meeting transcript, or free-hand text \u2014 optionally with extra context a human adds.',
+ agent:'Receives the trigger from whichever source it came from and passes it to the intake &amp; decisioning agent.',
+ sys:'Nothing written yet — the case is not classified until the intake agent runs.',
+ output:'A raw case handed to the intake &amp; decisioning agent.',
+ children:[
+  {id:'intake',kind:'agent',label:'0 · Intake &amp; decisioning agent — read, extract, route',
+   detail:'One agent reads the trigger, works out which records are present — account, lead, opportunity, or a combination — extracts the fields, checks the CRM for duplicates, and routes the case into one of the scenarios below. The human adds any free-hand context in the app; the agent folds it in. (Core terms are defined in the bar at the top.)',
+   input:'The trigger from START (email / call transcript / free-hand text) plus any context the human adds.',
+   agent:'Reads and summarises the context; extracts the account, lead and opportunity fields; decides the entity mix; checks the CRM for an existing account — if it already exists it adds a new lead or deal rather than duplicating the account; then routes to the one matching scenario.',
+   sys:'Writes nothing until a scenario is chosen; the chosen box then creates the records.',
+   output:'A classified case sent to exactly one scenario below, with the extracted fields and any human context attached.',
+  children:[
+
+ {id:'e1',kind:'entry',label:'Account + Lead (Databricks joint campaign)',
+  detail:'A joint campaign gave us an account and one lead. No opportunity yet \u2014 marked later, when discovery produces one.',
+  input:'From intake: account + lead fields; no opportunity yet.',
+  output:'Account + Lead stored (opportunity empty); continues to the shared journey.',
+  agent:'Fill in the account\u2019s details (industry, size, tech stack, Databricks usage); fill in the lead\u2019s details (role, decision-making power, how to reach them); score and set tier + owner; have a human confirm the lead; mark the record \u201cno discovery yet\u201d.',
+  sys:'Create Account + Lead. Opportunity left empty.',
+  children:[
+   {id:'e1a',kind:'agent',label:'Store the Account',detail:'The agent writes the organisation to its own store (the main record) \u2014 where the deal will live. No human step.',agent:'Decides where the account belongs, checks for duplicates, and links related records.',
+    children:[
+      {id:'e1b',kind:'agent',label:'Store the Lead',detail:'The agent writes and links the person to the account \u2014 no human step.',agent:'Cleans up the person’s details, links them to the account, and notes how to reach them.',
+        children:[ {id:'e1_join',kind:'join',label:'→ continues the journey',join:true} ]}
+     ]}
+    ]},
+
+ {id:'e2',kind:'entry',label:'Account + Opportunity (inbound referral)',
+  detail:'An inbound referral: this account needs X. Account and opportunity are known; we still need the lead.',
+  input:'From intake: account + a stated opportunity; lead still to find.',
+  output:'Account + Opportunity stored, lead pending; continues to the shared journey.',
+  agent:'Fill in the account’s details; capture the stated opportunity (problem, scope, why us); find the right lead; check we’re not already working it; a human confirms the lead within the shared pipeline.',
+  sys:'Create Account + Opportunity. Lead pending.',
+  children:[
+   {id:'e2a',kind:'agent',label:'Store the Account',detail:'The agent writes the organisation to its store \u2014 no human step.',agent:'Checks for duplicates and links the account to the incoming referral.',
+    children:[
+     {id:'e2b',kind:'agent',label:'Store the Opportunity',detail:'The agent writes the opportunity; value and stage are still unknown.',agent:'Estimate value band and stage from the referral wording.',
+      children:[
+        {id:'e2c',kind:'agent',label:'Find the Lead',detail:'Who owns this problem internally?',agent:'Work out who’s who at the account; propose the likely decision-maker and a second stakeholder.',
+         children:[ {id:'e2_join',kind:'join',label:'→ continues the journey',join:true} ]}
+      ]}
+    ]}
+   ]},
+
+ {id:'e3',kind:'entry',label:'Account only',
+  detail:'We know the target organisation but not a person and not a problem yet.',
+  input:'From intake: an account name + URL — no person, no problem.',
+  output:'Account stored with a who’s-who map; continues to the shared journey.',
+  agent:'Capture the account and propose who to approach (a who’s-who map); the shared pipeline then researches, scores, prioritises and confirms the lead before any outreach.',
+  children:[
+   {id:'e3a',kind:'agent',label:'Store the Account',detail:'The agent writes the organisation to its store \u2014 no human step.',agent:'Checks for duplicates and adds it to the target list.',
+    children:[
+     {id:'e3b',kind:'agent',label:'Work out who\u2019s who',detail:'Who should we approach, and in what order?',agent:'Draft the order to approach people (decision-maker \u2192 internal champion \u2192 influencer).',
+      children:[ {id:'e3_join',kind:'join',label:'→ continues the journey',join:true} ]}
+    ]}
+   ]},
+
+ {id:'e4',kind:'entry',label:'Lead only',
+  detail:'A person reached out (or we found them) but we have not confirmed the organisation they belong to.',
+  input:'From intake: a person’s details, account unconfirmed.',
+  output:'Verified Account + linked Lead; continues to the shared journey.',
+  agent:'Identify and verify the account behind the lead; fill in both; check fit; a human confirms the lead within the shared pipeline.',
+  children:[
+   {id:'e4a',kind:'agent',label:'Verify the account behind the lead',detail:'Confirm the organisation and that the person genuinely works there.',agent:'Cross-check email domain, LinkedIn, and our records.',
+    children:[
+     {id:'e4b',kind:'agent',label:'Store the Lead, linked to the Account',detail:'The agent writes and links the person to the verified account \u2014 no human step.',agent:'Cleans up the person’s details and links them to the resolved account.',
+      children:[ {id:'e4_join',kind:'join',label:'→ continues the journey',join:true} ]}
+    ]}
+   ]},
+
+ {id:'e5',kind:'entry',label:'Lead + Opportunity',
+  detail:'We have a person and a stated problem, but not the confirmed account record.',
+  input:'From intake: a person + a stated problem, account unconfirmed.',
+  output:'Resolved Account + Opportunity + an authority check; continues to the shared journey.',
+  agent:'Resolve the account; create the opportunity; check the lead actually has authority on that problem; a human confirms the lead within the shared pipeline.',
+  children:[
+   {id:'e5a',kind:'agent',label:'Resolve the Account',agent:'Find the organisation the lead belongs to and check for duplicates.',
+    children:[
+     {id:'e5b',kind:'agent',label:'Store the Opportunity',detail:'The agent writes the opportunity against the resolved account \u2014 no human step.',agent:'Captures the stated problem, value band and stage.',
+      children:[
+        {id:'e5c',kind:'agent',label:'Authority check',detail:'Can this person actually decide on this problem?',agent:'Confirm role and budget authority; flag if we need a second stakeholder.',
+         children:[ {id:'e5_join',kind:'join',label:'→ continues the journey',join:true} ]}
+      ]}
+    ]}
+   ]},
+
+ {id:'e6',kind:'entry',label:'Account + Lead + Opportunity (full)',
+  detail:'Account, lead and opportunity are all present. The agent validates rather than invents.',
+  input:'From intake: account, lead and opportunity all supplied.',
+  output:'Validated, de-duplicated records with an owner set; continues to the shared journey.',
+  agent:'Check the three records against each other; remove duplicates; set the owner; a human confirms the lead; research to back up the reason to act now rather than assume it.',
+  children:[
+   {id:'e6a',kind:'agent',label:'Check + remove duplicates',detail:'The agent cross-checks the three records against each other and removes duplicates.',
+    children:[ {id:'e6_join',kind:'join',label:'→ continues the journey',join:true} ]}
+   ]},
+
+ {id:'e8',kind:'entry',label:'Event / attendee list (import)',
+  detail:'An event or registrant list lands — many attendees at once. Each is matched against existing accounts: new ones created, existing ones updated, all carrying the event as their source.',
+  input:'From intake: an event / attendee file (CSV or xlsx).',
+  output:'Accounts + Contacts created or updated, each tagged with the event; continue to the shared journey.',
+  agent:'Imports the CSV / xlsx; matches by name + domain; new → target accounts, existing → updated not duplicated; queues event follow-up with the source tag.',
+  sys:'Create / update Accounts + Contacts from the list, each tagged with the event.',
+  children:[
+   {id:'e8a',kind:'agent',label:'Import + remove duplicates',detail:'Match attendees by name + domain against our records; close-but-not-exact matches flagged for a human to confirm.',agent:'New → target accounts; existing → updated, not duplicated; junk excluded.',
+    children:[ {id:'e8_join',kind:'join',label:'→ continues the journey',join:true} ]}
+  ]},
+
+ {id:'e9',kind:'entry',label:'Existing account — growth sweep',
+  detail:'A weekly sweep over accounts we already have surfaces a new opportunity to grow one — proposed with evidence, for a human to review before it enters the pipeline.',
+  input:'From a weekly sweep of existing accounts — not a fresh arrival.',
+  output:'A proposed Opportunity on an existing Account, awaiting human review.',
+  agent:'Sweeps existing accounts for growth signals; proposes a new opportunity against the existing account (not a duplicate), with a reason; queues it for review — nothing auto-created.',
+  sys:'Propose a new Opportunity on an existing Account.',
+  children:[
+   {id:'e9a',kind:'human',label:'Review the proposed opportunity',decision:{q:'Accept the proposed opportunity?',yes:'open it — it enters the pipeline',no:'dismiss — it will not resurface'},detail:'A human accepts or dismisses the proposed expansion; dismissed ones do not re-surface.',agent:'Presents the reason and evidence; on accept, opens the opportunity.',
+    children:[ {id:'e9_join',kind:'join',label:'→ continues the journey',join:true} ]}
+  ]},
+
+ {id:'e10',kind:'entry',label:'New asset published → find the audience (asset-first)',
+  detail:'The reverse of the usual start: instead of an account landing, we publish a case study or asset and go find the accounts it fits. We look for prospects whose situation matches what the asset proves, then open with that exact asset.',
+  input:'From a newly published asset — the audience is found, not received.',
+  output:'Accounts matched to the asset, each confirmed by a human; continue to the shared journey.',
+  agent:'Reads the published asset; works out who it is relevant to (industry, problem, the situation it proves); finds matching accounts; each confirmed match becomes an account to pursue, led with that asset.',
+  sys:'Create / match Accounts from the asset fit; tag the source as this asset.',
+  children:[
+   {id:'e10a',kind:'agent',label:'Point at the published asset',detail:'A case study or asset goes live — this is what we will lead with.',agent:'Reads the asset: what it proves, the industry, the problem it solves, the result.',
+    children:[
+     {id:'e10b',kind:'agent',label:'Find matching accounts',detail:'Look for accounts whose situation matches what the asset proves — same industry, same problem, similar setup.',agent:'Searches our target list and the web for accounts that fit the asset; flags close matches for a human to confirm; each confirmed match becomes an account to pursue.',
+      children:[ {id:'e10_join',kind:'join',label:'→ continues the journey',join:true} ]}
+    ]}
+  ]},
+
+ {id:'e7',kind:'entry',label:'Ambiguous / none of the above',
+  detail:'Partial or conflicting information. The agent asks one clarifying question.',
+  agent:'Flag exactly what is missing (account, lead, or opportunity) and request it; park until resolved.',
+  input:'A case the intake agent could not confidently classify.',
+  output:'A held case; re-enters intake once the missing piece arrives.',
+  sys:'Holds a \u201ccapture incomplete\u201d note; creates nothing.'}
+
+  ]}
+]};
+
+var SHARED=POST('sh');
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function chip(n){return '<span class="chip c-'+n.kind+'">'+esc(KIND[n.kind]||n.kind)+'</span>';}
+function edgeHTML(c){return c.input?'<div class="edgebox"><span class="elbl">Hand-off →</span>'+c.input+'</div>':'';}
+function nodeHTML(n){
+  var kids=n.children&&n.children.length;
+  var h='<div class="node" data-id="'+n.id+'">';
+  h+='<div class="box k-'+n.kind+'">';
+  h+='<div class="brow">'+(kids?'<span class="tw">\u25B8</span>':'')+'<span class="nlabel">'+n.label+'</span>'+chip(n)+tktChip(n.id)+(n.vis?'<span class="vtag">'+n.vis+'</span>':'')+'</div>';
+  h+='<div class="bbody">';
+  if(n.detail)h+='<p class="detail">'+n.detail+'</p>';
+  if(n.input&&(n.id==='start'||n.id==='sh_res'))h+='<div class="line lin"><span class="lbl">Input &larr;</span>'+n.input+'</div>';
+  if(n.agent)h+='<div class="line lag"><span class="lbl">Agent &mdash; background</span>'+n.agent+'</div>';
+  if(n.sys)h+='<div class="line lsys"><span class="lbl">Saved to records</span>'+n.sys+'</div>';
+  if(n.channel)h+='<div class="line lch"><span class="lbl">Channel</span>'+n.channel+'</div>';
+  if(n.asset)h+='<div class="line lasset"><span class="lbl">Asset used</span>'+n.asset+'</div>';
+  if(n.output&&!(n.children&&n.children.length))h+='<div class="line lout"><span class="lbl">Output &rarr;</span>'+n.output+'</div>';
+  if(n.loop)h+='<div class="line llp"><span class="lbl">Loop</span>'+n.loop+'</div>';
+  if(n.decision)h+='<div class="dec"><div class="dq">'+n.decision.q+'</div><div class="dbr"><span class="y"><b>Yes ▸</b> '+n.decision.yes+'</span><span class="n"><b>No ▸</b> '+n.decision.no+'</span></div></div>';
+  h+='</div>';
+  h+='</div>';
+  if(kids)h+='<div class="kids">'+n.children.map(function(c){return '<div class="kidrow">'+edgeHTML(c)+nodeHTML(c)+'</div>';}).join('')+'</div>';
+  h+='</div>';
+  return h;
+}
+document.getElementById('sections').innerHTML=
+ '<div class="tree"><div class="canvas">'
+ +'<svg class="links" xmlns="http://www.w3.org/2000/svg"></svg>'
+ +'<div class="zone capture">'+nodeHTML(FLOW)+'</div>'
+ +'<div class="zone shared-zone hidden">'+nodeHTML(SHARED)+'</div>'
+ +'</div></div>';
+var ROOT=document.querySelector('.node[data-id="start"]');if(ROOT)ROOT.classList.add('open');
+var INTK=document.querySelector('.node[data-id="intake"]');if(INTK)INTK.classList.add('open');
+
+var PARENT={};
+(function walk(list,p){list.forEach(function(n){PARENT[n.id]=p;if(n.children)walk(n.children,n.id);});})([FLOW,SHARED],null);
+
+var treeEl=document.querySelector('.tree');
+var SVGNS='http://www.w3.org/2000/svg';
+function drawLinks(){
+ var svg=document.querySelector('svg.links'),canvas=document.querySelector('.canvas'),zone=document.querySelector('.shared-zone');
+ if(!svg||!canvas||!zone)return;
+ while(svg.firstChild)svg.removeChild(svg.firstChild);
+ var joins=[];
+ document.querySelectorAll('.node[data-id$="_join"]').forEach(function(a){
+  var box=a.querySelector(':scope>.box');
+  if(box&&box.getClientRects().length)joins.push(box);
+ });
+ if(!joins.length){zone.classList.add('hidden');return;}
+ zone.classList.remove('hidden');
+ var target=document.querySelector('.node[data-id="sh_res"]>.box');
+ if(!target)return;
+ var cr=canvas.getBoundingClientRect();
+ var tr=target.getBoundingClientRect();
+ var tx=tr.left-cr.left,ty=tr.top-cr.top+tr.height/2;
+ joins.forEach(function(box){
+  var br=box.getBoundingClientRect();
+  var sx=br.right-cr.left,sy=br.top-cr.top+br.height/2;
+  var mx=(sx+tx)/2;
+  var path=document.createElementNS(SVGNS,'path');
+  path.setAttribute('d','M '+sx+' '+sy+' C '+mx+' '+sy+' '+mx+' '+ty+' '+tx+' '+ty);
+  svg.appendChild(path);
+ });
+}
+function redraw(){requestAnimationFrame(drawLinks);}
+
+document.getElementById('sections').addEventListener('click',function(e){
+ var box=e.target.closest('.box');if(!box)return;
+ var node=box.parentElement;
+ var opening=!node.classList.contains('open');
+ node.classList.toggle('open');
+ if(opening){var k=node.querySelector('.kids');if(k)k.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+ redraw();
+});
+document.getElementById('expandAll').addEventListener('click',function(){document.querySelectorAll('.node').forEach(function(n){n.classList.add('open');});redraw();});
+document.getElementById('collapseAll').addEventListener('click',function(){document.querySelectorAll('.node').forEach(function(n){n.classList.remove('open');});redraw();});
+window.addEventListener('resize',redraw);
+
+var panning=false,px=0,py=0,psl=0,pst=0;
+treeEl.addEventListener('mousedown',function(e){
+ if(e.target.closest('.box'))return;
+ panning=true;treeEl.classList.add('panning');
+ px=e.clientX;py=e.clientY;psl=treeEl.scrollLeft;pst=treeEl.scrollTop;
+ e.preventDefault();
+});
+window.addEventListener('mousemove',function(e){
+ if(!panning)return;
+ treeEl.scrollLeft=psl-(e.clientX-px);
+ treeEl.scrollTop=pst-(e.clientY-py);
+});
+window.addEventListener('mouseup',function(){if(!panning)return;panning=false;treeEl.classList.remove('panning');});
+
+function flat(){var out=[];(function w(list){list.forEach(function(n){out.push(n);if(n.children)w(n.children);});})([FLOW,SHARED]);return out;}
+document.getElementById('search').addEventListener('input',function(){
+ var q=this.value.trim().toLowerCase();var all=flat();
+ document.querySelectorAll('.node').forEach(function(el){el.classList.remove('hit');el.classList.remove('dim');});
+ if(!q){redraw();return;}
+ all.forEach(function(n){
+  var blob=(n.label+' '+(n.detail||'')+' '+(n.input||'')+' '+(n.agent||'')+' '+(n.sys||'')+' '+(n.channel||'')+' '+(n.asset||'')+' '+(n.output||'')+' '+(n.loop||'')).toLowerCase();
+  if(blob.indexOf(q)>=0){
+   var el=document.querySelector('.node[data-id="'+n.id+'"]');if(el)el.classList.add('hit');
+   var p=n.id;
+   while(PARENT[p]){el=document.querySelector('.node[data-id="'+PARENT[p]+'"]');if(el){el.classList.add('open');el.classList.add('hit');}p=PARENT[p];}
+  }
+ });
+ document.querySelectorAll('.node').forEach(function(el){if(!el.classList.contains('hit'))el.classList.add('dim');});
+ var first=document.querySelector('.node.hit');if(first)first.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});
+ redraw();
+});
+redraw();
+</script>
+</body>
+</html>
